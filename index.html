@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Before Mom — A Mother's Day Experience</title>
+<meta name="description" content="A cinematic AI-powered tribute to your mother. Before you became my mother, you were someone's little girl."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<canvas id="particles-canvas"></canvas>
+
+<!-- MUSIC TOGGLE -->
+<button id="music-toggle" class="music-toggle" onclick="toggleMusic()" aria-label="Toggle music">
+  <span class="music-icon" id="music-icon">♪</span>
+</button>
+
+<!-- HERO -->
+<section id="hero" class="section hero-section">
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Mother's Day · A Cinematic Tribute</p>
+    <h1 class="hero-title">Before you became<br/><em>my mother</em>,</h1>
+    <p class="hero-subtitle">you were someone's little girl.</p>
+    <p class="hero-desc">Give her the story she never knew you remembered.</p>
+    <button class="btn-glow" id="hero-cta" onclick="scrollToSection('upload-childhood')">Begin the Journey ↓</button>
+  </div>
+  <div class="scroll-hint">
+    <span class="scroll-dot"></span>
+  </div>
+</section>
+
+<!-- STEP 1: Upload Childhood Photo -->
+<section id="upload-childhood" class="section upload-section">
+  <div class="section-inner">
+    <div class="step-badge">01</div>
+    <h2 class="section-title">Her First Chapter</h2>
+    <p class="section-sub">Upload a childhood photo of your mother</p>
+    <div class="upload-zone" id="zone-childhood" onclick="triggerUpload('childhood-input')">
+      <div class="upload-icon">📷</div>
+      <p class="upload-label">Drop her childhood photo here</p>
+      <p class="upload-hint">or click to browse · JPG, PNG</p>
+      <img id="preview-childhood" class="upload-preview" alt="Childhood preview"/>
+    </div>
+    <input type="file" id="childhood-input" accept="image/*" class="hidden-input" onchange="handleUpload(this,'preview-childhood','zone-childhood')"/>
+  </div>
+</section>
+
+<!-- STEP 2: Upload Current/Family Photo -->
+<section id="upload-current" class="section upload-section alt-bg">
+  <div class="section-inner">
+    <div class="step-badge">02</div>
+    <h2 class="section-title">The Woman She Became</h2>
+    <p class="section-sub">Upload a current or family photo</p>
+    <div class="upload-zone" id="zone-current" onclick="triggerUpload('current-input')">
+      <div class="upload-icon">🌸</div>
+      <p class="upload-label">Drop the current photo here</p>
+      <p class="upload-hint">or click to browse · JPG, PNG</p>
+      <img id="preview-current" class="upload-preview" alt="Current preview"/>
+    </div>
+    <input type="file" id="current-input" accept="image/*" class="hidden-input" onchange="handleUpload(this,'preview-current','zone-current')"/>
+  </div>
+</section>
+
+<!-- STEP 3: Mother's Name -->
+<section id="name-section" class="section name-section">
+  <div class="section-inner">
+    <div class="step-badge">03</div>
+    <h2 class="section-title">Her Name</h2>
+    <p class="section-sub">The name that means the whole world</p>
+    <div class="input-wrapper">
+      <input type="text" id="mothers-name" class="elegant-input" placeholder="e.g. Savita, Priya, Maria..." maxlength="60"/>
+      <div class="input-glow-line"></div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 4: Memories -->
+<section id="memories-section" class="section memories-section alt-bg">
+  <div class="section-inner">
+    <div class="step-badge">04</div>
+    <h2 class="section-title">Your Memories</h2>
+    <p class="section-sub">Share the moments only you know</p>
+    <div class="memory-cards">
+      <div class="memory-card" id="card-1">
+        <div class="memory-num">Memory 1</div>
+        <textarea class="memory-textarea" id="memory-1" placeholder="Her hands always smelled like... The way she would wake me up was..." rows="4"></textarea>
+      </div>
+      <div class="memory-card" id="card-2">
+        <div class="memory-num">Memory 2</div>
+        <textarea class="memory-textarea" id="memory-2" placeholder="I remember one evening when... She always said..." rows="4"></textarea>
+      </div>
+      <div class="memory-card" id="card-3">
+        <div class="memory-num">Memory 3</div>
+        <textarea class="memory-textarea" id="memory-3" placeholder="The thing I never told her is... If I could go back in time..." rows="4"></textarea>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 5: Generate -->
+<section id="generate-section" class="section generate-section">
+  <div class="section-inner center">
+    <div class="step-badge">05</div>
+    <h2 class="section-title">Weave the Story</h2>
+    <p class="section-sub">Let the memories become a cinematic tribute</p>
+    <div class="generate-orb" id="generate-orb">
+      <button class="btn-generate" id="generate-btn" onclick="generateStory()">
+        <span class="btn-generate-icon">✦</span>
+        <span class="btn-generate-text">Generate Her Story</span>
+      </button>
+    </div>
+    <p class="ai-badge">✦ Powered by Gemini AI</p>
+  </div>
+</section>
+
+<!-- API KEY MODAL -->
+<div id="api-modal" class="api-modal-backdrop">
+  <div class="api-modal-box">
+    <div class="api-modal-icon">✦</div>
+    <h3 class="api-modal-title">Enter Your Gemini API Key</h3>
+    <p class="api-modal-sub">Your key is used only in this browser session — never stored on any server.</p>
+    <div class="api-input-row">
+      <input type="password" id="api-key-input" class="api-key-field" placeholder="AIza..."/>
+      <button class="api-save-btn" onclick="saveApiKey()">Save &amp; Continue</button>
+    </div>
+    <p class="api-modal-link">Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></p>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<section id="loading-overlay" class="fullscreen-overlay overlay-hidden">
+  <div class="loading-background">
+    <img id="loading-photo" class="blurred-photo" src="" alt=""/>
+    <div class="loading-particles"></div>
+  </div>
+  <div class="loading-content">
+    <div class="loading-spinner"></div>
+    <div class="loading-text-container">
+      <p id="loading-text" class="loading-text">Rebuilding forgotten memories...</p>
+    </div>
+  </div>
+</section>
+
+<!-- CHILDHOOD MEMORY PLAYBACK -->
+<section id="childhood-memory" class="section childhood-memory-section hidden">
+  <div class="film-grain"></div>
+  <div class="childhood-memory-inner">
+    <canvas id="memory-particles-canvas" class="memory-particles-canvas"></canvas>
+    <div class="childhood-photo-stage">
+      <div class="childhood-photo-glow"></div>
+      <div class="childhood-photo-frame">
+        <img id="memory-childhood-img" src="" alt="Childhood memory"/>
+      </div>
+    </div>
+    <p class="childhood-quote">"Before she became my mother, she was a little girl with dreams."</p>
+  </div>
+</section>
+
+<!-- STORY PLAYBACK -->
+<section id="playback-section" class="section playback-section hidden">
+  <div class="film-grain"></div>
+  <div class="playback-inner">
+    <div class="playback-header">
+      <div class="reel-dots"><span></span><span></span><span></span></div>
+      <p class="playback-label">A Story in Frames</p>
+      <div class="reel-dots"><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="photos-cinematic">
+      <div class="photo-frame childhood-frame">
+        <img id="playback-childhood" src="" alt="Then"/>
+        <p class="frame-caption">Then</p>
+      </div>
+      <div class="timeline-line"><div class="timeline-glow-dot"></div></div>
+      <div class="photo-frame current-frame">
+        <img id="playback-current" src="" alt="Now"/>
+        <p class="frame-caption">Now</p>
+      </div>
+    </div>
+
+    <div class="story-display">
+      <p class="story-name-title" id="story-name-display"></p>
+      <div class="story-text-container" id="story-text-container">
+        <div class="story-text" id="story-text"></div>
+      </div>
+    </div>
+
+    <div class="playback-actions">
+      <button class="btn-secondary" onclick="shareStory()">🔗 Share This Story</button>
+      <button class="btn-secondary" onclick="restartApp()">✦ Create Another</button>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL: Thank You -->
+<section id="thankyou-section" class="section thankyou-section hidden">
+  <div class="thankyou-glow"></div>
+  <div class="thankyou-glow thankyou-glow-2"></div>
+  <div class="film-grain"></div>
+  <div class="section-inner center thankyou-content">
+    <div class="heart-anim">
+      <span class="heart-ring"></span>
+      <span class="heart-ring heart-ring-2"></span>
+      <span class="heart-core">♥</span>
+    </div>
+    <h2 class="thankyou-title">Happy Mother's Day</h2>
+    <p class="thankyou-message">Thank you for every sacrifice, every sleepless night, every silent prayer, and every version of yourself that built my world.</p>
+    <div class="thankyou-divider"></div>
+    <p class="thankyou-closing">You were someone's little girl once. And you became everything.</p>
+    <div class="floating-petals" id="petals-container"></div>
+  </div>
+  <div class="fade-to-black"></div>
+</section>
+
+<script src="script.js"></script>
+</body>
+</html>
