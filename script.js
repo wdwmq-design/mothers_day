@@ -457,12 +457,22 @@ async function generateStoryImage() {
 
   const wrapper = document.getElementById('story-card-wrapper');
   const card    = document.getElementById('story-card');
+  const content = card.querySelector('.story-card-content');
 
   // Move card into the visible render area (off-screen but not display:none)
   wrapper.style.left    = '0px';
   wrapper.style.top     = '0px';
   wrapper.style.zIndex  = '-999';
   wrapper.style.opacity = '1';
+
+  // Temporarily expand the tribute container height and ensure overflow is visible
+  const originalHeight = card.style.height;
+  const originalOverflow = card.style.overflow;
+  const originalContentOverflow = content ? content.style.overflow : '';
+
+  card.style.height = 'auto';
+  card.style.overflow = 'visible';
+  if (content) content.style.overflow = 'visible';
 
   // Wait for the photo to fully decode before capturing
   const photoEl = document.getElementById('story-card-photo');
@@ -473,24 +483,29 @@ async function generateStoryImage() {
   await new Promise(r => setTimeout(r, 400));
 
   try {
+    const targetHeight = Math.max(1920, card.scrollHeight);
+
     const canvas = await html2canvas(card, {
       width:       1080,
-      height:      1920,
-      windowWidth: 1080,   // match card — prevents viewport-relative clipping
-      windowHeight:1920,
+      height:      targetHeight,
+      windowWidth: 1080,
+      windowHeight: targetHeight,
       x:           0,
       y:           0,
       scrollX:     0,
       scrollY:     0,
-      scale:       1,
+      scale:       2,
       useCORS:     true,
       allowTaint:  true,
-      backgroundColor: '#050403',
+      backgroundColor: '#000000',
       logging:     false,
       imageTimeout: 8000,
     });
 
     wrapper.style.left = '-9999px';
+    card.style.height = originalHeight;
+    card.style.overflow = originalOverflow;
+    if (content) content.style.overflow = originalContentOverflow;
 
     generatedStoryDataUrl = canvas.toDataURL('image/png', 1.0);
     const response = await fetch(generatedStoryDataUrl);
@@ -498,6 +513,9 @@ async function generateStoryImage() {
     return generatedStoryDataUrl;
   } catch (err) {
     wrapper.style.left = '-9999px';
+    card.style.height = originalHeight;
+    card.style.overflow = originalOverflow;
+    if (content) content.style.overflow = originalContentOverflow;
     console.error('Story image generation failed:', err);
     return null;
   }
