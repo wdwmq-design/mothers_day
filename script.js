@@ -1,4 +1,4 @@
-let GEMINI_API_KEY = "AIzaSyDC-Riq7dZMf1P3HCSmBnxgpYBZAf86h2Q" || sessionStorage.getItem('bmom_key') || '';
+
 // ── PARTICLE SYSTEM ──────────────────────────────────────────────────────────
 (function () {
   const canvas = document.getElementById('particles-canvas');
@@ -220,33 +220,25 @@ function startMusicIfNeeded() {
   }
 }
 
-// ── API KEY ──────────────────────────────────────────────────────────────────
-function saveApiKey() {
-  const val = document.getElementById('api-key-input').value.trim();
-  if (!val) { alert('Please enter a valid API key.'); return; }
-  GEMINI_API_KEY = val;
-  // Store in sessionStorage for user convenience
-  sessionStorage.setItem('bmom_key', val);
-  document.getElementById('api-modal').classList.remove('visible');
-  generateStory();
-}
 
-// ── GEMINI AI ────────────────────────────────────────────────────────────────
+
+// ── LOCAL STORY GENERATOR ────────────────────────────────────────────────────
 async function callGemini(name, m1, m2, m3) {
+  return `Before the world called her "Mom," ${name} was once a little girl with dreams in her eyes and wonder in her heart.
 
-return `
-Before the world called her "Mom", ${name} was a little girl with dreams in her eyes and hope in her heart.
+Long before she carried anyone else, she carried her own hopes — small, tender, and full of life. She did not know then what she would become. She only knew how to feel deeply, love quietly, and keep going.
 
-Life was not always easy, but she kept moving forward with quiet strength and endless love. Through sacrifices no one noticed and sleepless nights no one remembered, she built a world where others could smile.
+She grew through moments no one saw. Through silent tears and soft mornings. Through every time she chose someone else over herself — not out of duty, but out of love so instinctive it needed no name.
 
-She stayed strong during difficult moments, gave love without conditions, and carried the weight of responsibilities without asking for anything in return.
+${m1 ? m1 : 'She was there in every quiet moment that mattered.'}
 
-The memories you shared — ${m1}, ${m2}, and ${m3} — are not just moments. They are proof of a love so deep that words can barely hold it.
+${m2 ? m2 : 'Her love showed up in ways that words could never fully hold.'}
 
-Today is not only about celebrating a mother. It is about celebrating a woman whose heart became a home for everyone around her.
+${m3 ? m3 : 'And in remembering her, we remember ourselves.'}
 
-Happy Mother's Day, ${name}. Thank you for every version of yourself that built this world with love.
-`;
+To love a mother is to love the first home you ever knew — warm, unconditional, and always waiting for you to return.
+
+Happy Mother's Day, ${name}. Before you became everything to us, you were someone's little girl. And you deserved all the love in the world then, just as you do now.`;
 }
 
 // ── CINEMATIC PARAGRAPH REVEAL ───────────────────────────────────────────────
@@ -309,8 +301,6 @@ function stopLoadingOverlay({ overlay, iv, startTime }) {
 
 // ── MAIN FLOW ────────────────────────────────────────────────────────────────
 function generateStory() {
-  if (!GEMINI_API_KEY) { document.getElementById('api-modal').classList.add('visible'); return; }
-
   // Start music on first generate
   startMusicIfNeeded();
 
@@ -373,16 +363,7 @@ function generateStory() {
       stopLoadingOverlay(loadCtx);
       btn.classList.remove('loading');
       btn.querySelector('.btn-generate-text').textContent = 'Generate Her Story';
-      if (err.message.includes('429')) {
-        alert('You have reached the API rate limit. Please wait a minute and try again.');
-      } else if (/API_KEY|403|401|invalid|denied|not found/i.test(err.message)) {
-        GEMINI_API_KEY = ''; sessionStorage.removeItem('bmom_key');
-        alert('Invalid or denied API key. Please enter a valid key.');
-        document.getElementById('api-modal').classList.add('visible');
-      } else {
-        alert('Unable to generate story right now.');
-        console.error(err);
-      }
+      console.error(err);
     });
 }
 
@@ -421,3 +402,203 @@ function restartApp() {
 
 // Continuous petals
 setInterval(() => { if (!document.getElementById('thankyou-section').classList.contains('hidden')) spawnPetals(); }, 7000);
+
+// ── SHARE AS STORY IMAGE ─────────────────────────────────────────────────────
+let generatedStoryBlob = null;
+let generatedStoryDataUrl = null;
+
+function extractCinematicQuote() {
+  const storyEl = document.getElementById('story-text');
+  const fallback = 'Before you became my mother, you were someone\'s little girl. And you deserved all the love in the world then, just as you do now.';
+  if (!storyEl) return `"${fallback}"`;
+  const paragraphs = storyEl.querySelectorAll('.story-paragraph');
+  if (paragraphs.length === 0) return `"${fallback}"`;
+
+  // Prefer a highlighted (first/last) paragraph
+  let quote = '';
+  paragraphs.forEach(p => {
+    if (p.classList.contains('highlight') && !quote) {
+      quote = p.textContent.trim();
+    }
+  });
+  if (!quote) quote = paragraphs[0].textContent.trim();
+
+  // Hard cap at 160 chars, break at last sentence end for elegance
+  const MAX = 160;
+  if (quote.length > MAX) {
+    let cut = quote.lastIndexOf('.', MAX);
+    if (cut < 80) cut = quote.lastIndexOf(' ', MAX); // fallback: word boundary
+    quote = cut > 0 ? quote.substring(0, cut + 1) : quote.substring(0, MAX) + '…';
+  }
+  return `"${quote}"`;
+}
+
+function populateStoryCard() {
+  const name = document.getElementById('mothers-name').value.trim() || 'Mom';
+  const cImg = document.getElementById('preview-childhood').src;
+  const nImg = document.getElementById('preview-current').src;
+  const quote = extractCinematicQuote();
+
+  // Set photo — prefer current photo, fallback to childhood
+  const photoEl = document.getElementById('story-card-photo');
+  if (nImg && nImg.startsWith('data:')) {
+    photoEl.src = nImg;
+  } else if (cImg && cImg.startsWith('data:')) {
+    photoEl.src = cImg;
+  }
+
+  // Set name and quote
+  document.getElementById('story-card-name').textContent = name;
+  document.getElementById('story-card-quote').textContent = quote;
+}
+
+async function generateStoryImage() {
+  populateStoryCard();
+
+  const wrapper = document.getElementById('story-card-wrapper');
+  const card    = document.getElementById('story-card');
+
+  // Move card into the visible render area (off-screen but not display:none)
+  wrapper.style.left    = '0px';
+  wrapper.style.top     = '0px';
+  wrapper.style.zIndex  = '-999';
+  wrapper.style.opacity = '1';
+
+  // Wait for the photo to fully decode before capturing
+  const photoEl = document.getElementById('story-card-photo');
+  if (photoEl.src && photoEl.src !== window.location.href) {
+    try { await photoEl.decode(); } catch (_) { /* continue anyway */ }
+  }
+  // Extra paint frame for fonts / backgrounds
+  await new Promise(r => setTimeout(r, 400));
+
+  try {
+    const canvas = await html2canvas(card, {
+      width:       1080,
+      height:      1920,
+      windowWidth: 1080,   // match card — prevents viewport-relative clipping
+      windowHeight:1920,
+      x:           0,
+      y:           0,
+      scrollX:     0,
+      scrollY:     0,
+      scale:       1,
+      useCORS:     true,
+      allowTaint:  true,
+      backgroundColor: '#050403',
+      logging:     false,
+      imageTimeout: 8000,
+    });
+
+    wrapper.style.left = '-9999px';
+
+    generatedStoryDataUrl = canvas.toDataURL('image/png', 1.0);
+    const response = await fetch(generatedStoryDataUrl);
+    generatedStoryBlob = await response.blob();
+    return generatedStoryDataUrl;
+  } catch (err) {
+    wrapper.style.left = '-9999px';
+    console.error('Story image generation failed:', err);
+    return null;
+  }
+}
+
+async function openShareModal() {
+  const modal = document.getElementById('share-modal');
+  const loading = document.getElementById('share-preview-loading');
+  const previewImg = document.getElementById('share-preview-img');
+
+  // Reset state
+  loading.classList.remove('done');
+  previewImg.classList.remove('visible');
+  previewImg.src = '';
+  generatedStoryBlob = null;
+  generatedStoryDataUrl = null;
+
+  // Show modal
+  modal.classList.add('visible');
+
+  // Generate the image
+  const dataUrl = await generateStoryImage();
+
+  if (dataUrl) {
+    previewImg.src = dataUrl;
+    previewImg.classList.add('visible');
+    loading.classList.add('done');
+  } else {
+    loading.querySelector('p').textContent = 'Could not generate image. Please try again.';
+  }
+}
+
+function closeShareModal() {
+  document.getElementById('share-modal').classList.remove('visible');
+}
+
+function downloadStoryImage() {
+  if (!generatedStoryDataUrl) return;
+  const name = document.getElementById('mothers-name').value.trim() || 'Mom';
+  const link = document.createElement('a');
+  link.download = `BeforeMom_${name.replace(/\s+/g, '_')}_tribute.png`;
+  link.href = generatedStoryDataUrl;
+  link.click();
+}
+
+function shareToWhatsApp() {
+  const name = document.getElementById('mothers-name').value.trim() || 'Mom';
+  const text = encodeURIComponent(
+    `💛 I created a cinematic Mother's Day tribute for ${name}.\n\n"Before you became my mother, you were someone's little girl."\n\n— Before Mom ✦\n\n${window.location.href}`
+  );
+
+  // If we have the image blob, try native share first (mobile)
+  if (navigator.canShare && generatedStoryBlob) {
+    const file = new File([generatedStoryBlob], 'BeforeMom_tribute.png', { type: 'image/png' });
+    if (navigator.canShare({ files: [file] })) {
+      navigator.share({
+        title: `Before Mom — ${name}`,
+        text: `💛 A cinematic Mother's Day tribute for ${name}`,
+        files: [file],
+      }).catch(() => {
+        // Fallback to WhatsApp URL
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+      });
+      return;
+    }
+  }
+
+  // Download image first, then open WhatsApp
+  if (generatedStoryDataUrl) downloadStoryImage();
+  window.open(`https://wa.me/?text=${text}`, '_blank');
+}
+
+function shareToInstagram() {
+  // Instagram doesn't support direct web sharing — download + guide user
+  if (generatedStoryDataUrl) {
+    downloadStoryImage();
+
+    // If native share is available (mobile), try it with the image file
+    if (navigator.canShare && generatedStoryBlob) {
+      const file = new File([generatedStoryBlob], 'BeforeMom_tribute.png', { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({
+          title: 'Before Mom — A Mother\'s Day Tribute',
+          files: [file],
+        }).catch(() => {});
+        return;
+      }
+    }
+
+    // Show instructions
+    setTimeout(() => {
+      alert('✨ Image downloaded!\n\nOpen Instagram → Create Story → Select the downloaded image from your gallery.\n\nTip: Add #BeforeMom and #MothersDay to your story!');
+    }, 500);
+  }
+}
+
+// Close share modal with Escape key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeShareModal();
+});
+// Close share modal on backdrop click
+document.getElementById('share-modal')?.addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeShareModal();
+});
